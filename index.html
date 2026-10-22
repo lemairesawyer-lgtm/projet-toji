@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Projet Toji</title>
+  <meta name="description" content="Calories, macros, musculation, boxe et poids. 0% talent, 100% travail.">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Projet Toji">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preload" href="fonts/dela-gothic-one.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- Motifs de trame manga utilisés par les dessins -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <pattern id="tone" width="3.2" height="3.2" patternUnits="userSpaceOnUse"><rect width="3.2" height="3.2" fill="#262626"/><circle cx="1.6" cy="1.6" r="0.95" fill="#d8d8d8"/></pattern>
+      <pattern id="toneFill" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.9" fill="#fff"/></pattern>
+    </defs>
+  </svg>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <div id="app">
+    <header class="topbar">
+      <button class="avatar" id="avatar" data-act="settings" aria-label="Profil et réglages"></button>
+      <div class="brand"><b>Projet Toji</b><span id="brandSub"></span></div>
+      <button class="icon-btn" data-act="settings" aria-label="Réglages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>
+      </button>
+    </header>
+    <main id="view" class="view"></main>
+  </div>
+
+  <nav class="nav" aria-label="Navigation">
+    <span class="nav-ind" aria-hidden="true"></span>
+    <button data-act="tab" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>Accueil</button>
+    <button data-act="tab" data-tab="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 21V3c-2.5 1.5-3.5 4-3.5 8h3.5"/></svg>Manger</button>
+    <button data-act="tab" data-tab="train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M6.5 6v12M3.5 9v6M17.5 6v12M20.5 9v6M6.5 12h11"/></svg>Training</button>
+    <button data-act="tab" data-tab="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V8a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5v4a5 5 0 0 1-5 5H9.5"/><path d="M8 13H6a2 2 0 0 0 0 4h2M8 17v4h8v-4"/></svg>Boxe</button>
+    <button data-act="tab" data-tab="weight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Progrès</button>
+  </nav>
+
+  <div class="rest-pill" id="rest" role="timer" aria-live="polite">
+    <svg viewBox="0 0 46 46"><circle class="t1" cx="23" cy="23" r="19"/><circle class="t2" id="restRing" cx="23" cy="23" r="19" stroke-dasharray="119.4" stroke-dashoffset="0"/></svg>
+    <div class="grow"><b id="restT">2:00</b><span id="restL">Repos</span></div>
+    <button id="restAdd">+30 s</button><button id="restSkip">Passer</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/body.js"></script>
+  <script src="js/hero.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

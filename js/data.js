@@ -107,6 +107,43 @@ const EX = {
     cues: ['Haltères lourds, épaules basses, buste droit.', 'Petits pas rapides, regard devant toi.', 'Serre les poignées au maximum : c\'est la grip qui travaille.'] },
   'lateral-raise-2': { ref: 'lateral-raise', reps: '12-15' },
   'abs-2': { ref: 'abs' },
+  'overhead-ext-2': { ref: 'overhead-ext', name: 'Overhead cable extension',
+    cues: ['Corde à la poulie basse, dos à la machine, un pied devant.', 'Coudes vers le haut, près de la tête : ils ne bougent pas.', 'Descends loin derrière la tête pour étirer la longue portion.', 'Tends en haut et écarte légèrement la corde.'] },
+
+  // Exercices de remplacement (bouton « Changer » quand une machine est prise)
+  'weighted-dips': { name: 'Dips lestés', sets: 3, reps: '6-10', rest: 120, bw: true,
+    p: ['chest', 'tri'], s: ['deltF'],
+    cues: ['Note le lest dans la case kg (0 ou vide si poids du corps).', 'Buste penché en avant = plus de pecs. Buste droit = plus de triceps.', 'Descends jusqu\'à ce que les épaules passent un peu sous les coudes, sans douleur.', 'Remonte sans verrouiller sèchement les coudes.'] },
+  'machine-dips': { name: 'Dips machine', sets: 3, reps: '8-12', rest: 60,
+    p: ['tri'], s: ['chest', 'deltF'],
+    cues: ['Assis, poignées le long du corps, dos contre le dossier.', 'Pousse vers le bas jusqu\'à bras tendus, serre 1 seconde.', 'Remonte lentement jusqu\'à environ 90° aux coudes.'] },
+  'weighted-pullup': { name: 'Tractions lestées', sets: 3, reps: '5-8', rest: 120, bw: true,
+    p: ['lats'], s: ['bi', 'upb', 'deltR', 'fore'],
+    cues: ['Note le lest dans la case kg (0 ou vide si poids du corps).', 'Prise un peu plus large que les épaules, pars bras tendus.', 'Tire les coudes vers les hanches, menton au-dessus de la barre.', 'Descente contrôlée en 2 secondes, pas de balancier.'] },
+};
+
+// Remplacements proposés par le bouton « Changer » (les exercices déjà au programme du jour sont masqués)
+const DIPS = ['weighted-dips', 'machine-dips'];
+const EX_ALT = {
+  'incline-smith': [...DIPS, 'flat-smith', 'chest-press'],
+  'chest-press': [...DIPS, 'flat-smith', 'incline-smith'],
+  'cable-fly': [...DIPS, 'low-high-fly'],
+  'flat-smith': [...DIPS, 'chest-press', 'incline-smith'],
+  'low-high-fly': [...DIPS, 'cable-fly'],
+  'triceps-pushdown': [...DIPS, 'overhead-ext-2', 'skull-crusher'],
+  'overhead-ext-2': [...DIPS, 'triceps-pushdown', 'skull-crusher'],
+  'overhead-ext': [...DIPS, 'triceps-pushdown'],
+  'skull-crusher': [...DIPS, 'triceps-pushdown', 'overhead-ext'],
+  'lat-pulldown': ['weighted-pullup', 'wide-pulldown'],
+  'wide-pulldown': ['weighted-pullup', 'lat-pulldown'],
+  'tbar-row': ['chest-row', 'close-row'],
+  'close-row': ['chest-row', 'tbar-row'],
+  'chest-row': ['tbar-row', 'close-row'],
+  'smith-squat': ['leg-press'],
+  'leg-press': ['smith-squat'],
+  'preacher-curl': ['incline-curl', 'hammer-curl'],
+  'incline-curl': ['preacher-curl', 'hammer-curl'],
+  'hammer-curl': ['preacher-curl', 'incline-curl'],
 };
 
 // Résout les exercices qui en réutilisent un autre (ex : Lateral raise du samedi)
@@ -131,13 +168,13 @@ const TASKS = {
 
 // Semaine : index 0 = lundi
 const WEEK = [
-  { day: 'Lundi', title: 'Push', rest: false, before: [], lifts: ['incline-smith', 'chest-press', 'cable-fly', 'shoulder-press', 'lateral-raise', 'triceps-pushdown'], after: [] },
+  { day: 'Lundi', title: 'Push', rest: false, before: [], lifts: ['incline-smith', 'chest-press', 'cable-fly', 'shoulder-press', 'lateral-raise', 'triceps-pushdown', 'overhead-ext-2'], after: [] },
   { day: 'Mardi', title: 'Pull', rest: false, before: [], lifts: ['lat-pulldown', 'tbar-row', 'close-row', 'reverse-fly', 'preacher-curl', 'incline-curl', 'wrist-curl'], after: ['deadhang', 'box-short'] },
   { day: 'Mercredi', title: 'Legs', rest: false, before: ['jump-warmup', 'plyo'], lifts: ['smith-squat', 'leg-press', 'rdl', 'leg-extension', 'ham-curl', 'calf-raise', 'abs'], after: [] },
-  { day: 'Jeudi', title: 'Repos', rest: true, before: [], lifts: [], after: ['dribble', 'box-main'] },
+  { day: 'Jeudi', title: 'Rest Day', rest: true, before: [], lifts: [], after: ['dribble', 'box-main'] },
   { day: 'Vendredi', title: 'Chest & Back', short: 'C&B', rest: false, before: [], lifts: ['flat-smith', 'wide-pulldown', 'low-high-fly', 'chest-row', 'face-pull', 'shrugs'], after: [] },
   { day: 'Samedi', title: 'Arms', rest: false, before: [], lifts: ['hammer-curl', 'overhead-ext', 'skull-crusher', 'reverse-curl', 'farmer-walk', 'lateral-raise-2', 'abs-2'], after: ['jump-warmup', 'dunk'] },
-  { day: 'Dimanche', title: 'Repos', rest: true, before: [], lifts: [], after: ['box-light'] },
+  { day: 'Dimanche', title: 'Rest Day', rest: true, before: [], lifts: [], after: ['box-light'] },
 ];
 
 const RULES = [
@@ -211,7 +248,59 @@ const BOX_PRESETS = {
   light: { name: 'Shadow léger', mins: 15, blocks: [
     { label: 'Shadow lent', work: 180, rest: 60, rounds: 3, calls: true, note: 'Lent, fluide, respiration. Zéro force.' },
   ] },
+  // Pas de la boxe : séance de sprints de l'onglet Grow (utilise le même minuteur)
+  sprint: { name: 'Sprints', kind: 'sprint', mins: 20, blocks: [
+    { label: 'Échauffement', work: 480, rest: 30, rounds: 1, calls: false, note: 'Footing léger, montées de genoux, talons-fesses, 3 accélérations progressives.' },
+    { label: 'Sprint', work: 20, rest: 60, rounds: 6, calls: false, note: 'À fond, 100 %. Pendant le repos : marche, ne t\'assois pas.' },
+    { label: 'Retour au calme', work: 180, rest: 0, rounds: 1, calls: false, note: 'Marche et respire. Puis yaourt + banane + miel, ou un grand verre de lait.' },
+  ] },
 };
+
+/* ---------------- GROW : atteindre ta taille max ---------------- */
+// Routine posture (méthode « relâcher, allonger, verrouiller » + 3 exos anti-dos rond). sec = minuteur de maintien
+const GROW_ROUTINE = [
+  { id: 'roll', step: 'Relâcher', name: 'Balle ou rouleau', detail: '5 min : plante des pieds, mollets, ischios, haut du dos, épaules. Lentement, insiste sur les zones tendues.', sec: 300 },
+  { id: 'hipflex', step: 'Allonger', name: 'Étirement des fléchisseurs de hanche', detail: 'Un genou au sol, serre la fesse de ce côté, rentre le bassin, avance doucement les hanches. Tu dois le sentir devant la hanche, pas dans le bas du dos. 2 × 45 s par côté.', sec: 45 },
+  { id: 'couch', step: 'Allonger', name: 'Étirement des quadriceps au mur', detail: 'Genou au sol collé au mur (ou au canapé), pied arrière contre le mur, buste droit, bassin rentré. 2 × 45 s par côté.', sec: 45 },
+  { id: 'child', step: 'Allonger', name: 'Posture de l\'enfant', detail: 'Fesses vers les talons, bras tendus loin devant. 45 s, respire dans le dos.', sec: 45 },
+  { id: 'chin', step: 'Verrouiller', name: 'Rentrer le menton', detail: 'Dos au mur, recule la tête sans la baisser (fais un double menton). 2 × 10, tiens 3 s. Contre la tête en avant du téléphone.', sec: 0 },
+  { id: 'wall', step: 'Verrouiller', name: 'Wall angels', detail: 'Dos, tête et bras collés au mur, monte et descends les bras lentement. 2 × 10. Contre les épaules enroulées.', sec: 0 },
+  { id: 'bridge', step: 'Verrouiller', name: 'Pont fessier', detail: '3 × 12, tiens 2 s en haut en serrant les fesses. Remet le bassin droit.', sec: 0 },
+  { id: 'deadbug', step: 'Verrouiller', name: 'Dead bug', detail: '3 × 10 par côté, bas du dos collé au sol.', sec: 0 },
+  { id: 'hang', step: 'Décompresser', name: 'Suspension à la barre', detail: '2 × 30 à 45 s, épaules relâchées. Décomprime le dos (effet temporaire) et muscle la grip.', sec: 40 },
+];
+
+const GROW_TIPS = {
+  sleep: [
+    'Vise 8 à 9 h par nuit, couché avant 23 h, à la même heure même le week-end.',
+    'La plus grosse décharge d\'hormone de croissance arrive dans le premier sommeil profond, en début de nuit.',
+    'Écran coupé 30 min avant de dormir, chambre noire et fraîche.',
+    'Après une journée physique (job, salle), c\'est aussi le sommeil qui soulage le dos.',
+  ],
+  food: [
+    'Mange assez : ton surplus de calories et tes protéines servent aussi à ça.',
+    'Produits laitiers 2 à 3 fois par jour (lait, yaourt, fromage) pour le calcium. Lait pasteurisé, pas cru.',
+    'Vitamine D : 15 à 20 min de soleil les beaux jours, poissons gras, œufs. En hiver, demande à ton médecin.',
+    'Viande, œufs, légumineuses pour le zinc et le fer.',
+    'Aucun complément « taille » n\'a fait ses preuves : garde ton argent.',
+  ],
+  truth: [
+    'Chez les garçons, les cartilages de croissance se ferment le plus souvent entre 15 et 17 ans, parfois un peu plus tard. À 18 ans, il te reste peut-être un peu de marge, peut-être pas.',
+    'Seule une radio (main et poignet, ou genou) peut dire s\'ils sont encore ouverts. Demande à ton médecin si tu veux savoir.',
+    'La musculation ne bloque pas la croissance : continue la salle.',
+    'Tu es environ 1,5 cm plus grand le matin que le soir. Mesure-toi toujours le matin.',
+    'Une meilleure posture te fait paraître plus grand, sans chiffre garanti : méfie-toi des vidéos qui promettent 5 à 7 cm.',
+  ],
+};
+
+const GROW_SOURCES = [
+  ['KidsHealth : âge de fermeture des cartilages de croissance', 'https://kidshealth.org/en/parents/growth-plates.html'],
+  ['MSD Manuals : calcul de la taille cible (taille des parents)', 'https://www.msdmanuals.com/iframe/manual/medical-calculators/heightpotential.htm'],
+  ['Van Cauter et al. 1997 : sommeil profond et hormone de croissance', 'https://www.jci.org/articles/view/119587'],
+  ['Stokes et al. : hormone de croissance après un sprint', 'https://pubmed.ncbi.nlm.nih.gov/12137178/'],
+  ['Leatt, Reilly, Troup : perte de taille au cours de la journée', 'https://bjsm.bmj.com/content/20/3/119'],
+  ['AAP (HealthyChildren) : la musculation chez les jeunes', 'https://www.healthychildren.org/English/news/Pages/Guidance-on-Resistance-Training-for-Children.aspx'],
+];
 
 const DEFENSE_CALLS = ['esquive', 'rotation', 'parade', 'pas arrière', 'esquive, esquive', 'rotation, contre'];
 

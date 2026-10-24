@@ -16,6 +16,8 @@ const MET = {
   dunk: 5.0,    // 15070 basket, tirs au panier
   box: 5.8,     // 15110 boxe, sac de frappe (le shadow n'a pas d'entrée : valeur la plus proche)
   core: 2.8,    // 02024 gainage
+  walk: 3.5,    // 17160 marche (repos entre les sprints)
+  sprint: 11.0, // estimation : course très rapide (le Compendium n'a pas d'entrée « sprint »)
 };
 // Tâches du programme : [type MET, minutes]
 const TASK_BURN = { 'jump-warmup': ['warm', 10], plyo: ['plyo', 12], deadhang: ['hang', 3], dribble: ['dribble', 25], dunk: ['dunk', 20] };
@@ -50,6 +52,7 @@ function bmr() { const p = S.profile; return 10 * currentWeight() + 6.25 * (p.he
 function baseBurn() { return bmr() * (S.profile.act || 1.4); }
 
 function boxKcal(key) {
+  if (BOX_PRESETS[key].kind === 'sprint') return sum(BOX_PRESETS[key].blocks, (b) => (b.label === 'Sprint' ? netKcal(MET.sprint, (b.rounds * b.work) / 60) + netKcal(MET.walk, (b.rounds * b.rest) / 60) : netKcal(MET.warm, (b.rounds * b.work) / 60)));
   return sum(BOX_PRESETS[key].blocks, (b) => netKcal(MET[b.label === 'Échauffement' ? 'warm' : b.label === 'Gainage' ? 'core' : 'box'], (b.rounds * b.work) / 60));
 }
 function taskBurn(id) {

@@ -39,7 +39,7 @@ L'offre gratuite a une limite de requêtes par minute et par jour : largement as
 
 Le code-barres, lui, marche sans clé (base gratuite Open Food Facts).
 
-## 4. Mettre à jour l'app (comme pour cette version 3)
+## 4. Mettre à jour l'app (comme pour cette version 4)
 
 Sur GitHub, dans ton repository : « Add file », « Upload files », glisse **tout le contenu**
 du dossier `projet-toji` (comme la première fois). Les anciens fichiers sont remplacés,
@@ -52,6 +52,18 @@ Tes repas, pesées et séances sont gardés : l'app convertit toute seule tes an
 Tes repas, pesées et séances sont stockés sur ton téléphone uniquement.
 Réglages, « Exporter » : fais-le une fois par mois et garde le fichier (iCloud, Drive, mail).
 Si tu supprimes l'app sans sauvegarde, tout est perdu.
+
+## Nouveautés de la version 4
+
+- Onglets en anglais : Home, Eat, Training, Box, Grow, Progress.
+- Grow : ta taille (mesure mensuelle et courbe), ta taille cible d'après tes parents,
+  une routine posture avec minuteurs, une séance de sprints chronométrée, des conseils sommeil et nutrition, avec les sources.
+- Push : 7e exercice, Overhead cable extension.
+- Bouton « Changer » sur les exercices : dips lestés, dips machine, tractions lestées, etc.
+  Coche « Garder ce choix » pour que ça reste les semaines suivantes.
+- Séance validée par erreur : bouton « Annuler la séance » en bas du jour (avec retour en arrière possible).
+- Rest Day : Kuro mange ou chill les jours de repos.
+- Accueil : « Tes années », un carré par jour, allumé quand tu t'es entraîné.
 
 ## Nouveautés de la version 3
 

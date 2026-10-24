@@ -1,10 +1,10 @@
 /* Projet Toji — fonctionne hors connexion.
    Stratégie : on répond tout de suite avec la copie locale, et on met à jour en arrière-plan.
    Après une mise à jour des fichiers, ouvre l'app deux fois pour voir la nouvelle version. */
-const CACHE = 'projet-toji-v4';
+const CACHE = 'projet-toji-v5';
 const CORE = [
   './', './index.html', './css/app.css', './js/data.js', './js/body.js', './js/hero.js', './js/stats.js', './js/app.js',
-  './img/kuro/idle.webp', './img/kuro/flex.webp', './img/kuro/win.webp', './img/kuro/guard.webp', './img/kuro/curl.webp', './img/kuro/power.webp',
+  './img/kuro/idle.webp', './img/kuro/flex.webp', './img/kuro/win.webp', './img/kuro/guard.webp', './img/kuro/curl.webp', './img/kuro/power.webp', './img/kuro/eat.webp', './img/kuro/chill.webp',
   './manifest.webmanifest', './fonts/dela-gothic-one.woff2', './fonts/archivo-var.woff2',
   './icons/icon-192.png', './icons/apple-touch-icon.png',
 ];

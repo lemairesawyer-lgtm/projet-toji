@@ -2,7 +2,7 @@
    PROJET TOJI — Kuro, le guerrier de l'app (personnage ORIGINAL)
    Illustrations manga noir et blanc détourées (img/kuro/*.webp, fond transparent) animées en CSS :
    respiration, aura qui pulse, yeux qui brillent, étincelles qui montent.
-   Poses : idle, flex, win, guard, curl, power
+   Poses : idle, flex, win, guard, curl, power, eat et chill (rest day)
    ========================================================= */
 
 // Position des yeux dans chaque image (en % de la largeur / hauteur)
@@ -13,6 +13,8 @@ const KURO = {
   guard: [[45.4, 16.6], [51.5, 16.6]],
   curl: [[46.9, 14.9], [51.8, 14.9]],
   power: [[45.5, 48.3], [53.7, 48.3]],
+  eat: [[46.6, 20.3], [53.9, 20.3]],
+  chill: [],
 };
 // Cadrages : [x, y, largeur, hauteur] de la zone visible, en fraction de l'image
 const KURO_CROP = {

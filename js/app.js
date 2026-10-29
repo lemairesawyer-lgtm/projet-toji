@@ -36,7 +36,7 @@ const DEFAULTS = () => ({
   v: 2,
   profile: { name: '', height: 183, start: 68, target: 86, avatar: null, age: 18, act: 1.4 },
   goals: { mode: 'auto', surplus: 400, kcal: 3100, p: 130, c: 440, f: 90 },
-  ai: { key: '', model: 'gemini-flash-latest' },
+  ai: { key: '', model: 'auto', models: null },
   prefs: { sound: true, voice: true },
   food: {}, weights: [], train: {}, loads: {}, celebrated: {}, milestones: {}, extra: {},
   recents: [], boxStart: dkey(), created: dkey(), welcomed: false,
@@ -171,8 +171,8 @@ function macroBars(d) {
   const t = dayTotals(d); const g = goalsFor(d);
   const row = (key, label, unit = 'g') => {
     const f = clamp(t[key] / (g[key] || 1), 0, 1);
-    return `<div class="macro ${f >= 1 ? 'done' : ''}"><div class="macro-top"><b>${label}</b><span class="num">${fmt(t[key])} / ${fmt(g[key])} ${unit}</span></div>
-      <div class="bar-track"><div class="bar-fill" data-fid="m-${key}" data-f="${f}"></div></div></div>`;
+    return `<div class="macro ${f >= 1 ? 'done' : ''}"><div class="macro-top"><b>${label}</b><span class="num"><em>${fmt((t[key] / (g[key] || 1)) * 100)} %</em></span></div>
+      <div class="bar-track"><div class="bar-fill" data-fid="m-${key}" data-f="${f}"></div></div><div class="macro-sub num">${fmt(t[key])} / ${fmt(g[key])} ${unit}</div></div>`;
   };
   return row('p', 'Protéines') + row('c', 'Glucides') + row('f', 'Lipides');
 }
@@ -181,7 +181,7 @@ function nutriPanel(d) {
   const line = g.auto
     ? `Objectif = <b class="num">${fmt(b.total)}</b> kcal dépensées${b.planned ? ' (estimation avec ta séance prévue)' : ''} + <b class="num">${fmt(S.goals.surplus)}</b> de surplus.`
     : `Tu dépenses environ <b class="num">${fmt(b.total)}</b> kcal ${d === today() ? 'aujourd\'hui' : 'ce jour-là'}.`;
-  return `<section class="panel"><div class="panel-title"><h2>Nutrition</h2><span class="muted small num">${fmt(t.kcal)} / ${fmt(g.kcal)} kcal</span></div>
+  return `<section class="panel"><div class="panel-title"><h2>Nutrition</h2><span class="muted small num">${fmt(t.kcal)} / ${fmt(g.kcal)} kcal · ${fmt((t.kcal / (g.kcal || 1)) * 100)} %</span></div>
     <div class="nutri">${ring(d)}<div>${macroBars(d)}</div></div>
     <button class="burnline" data-act="tab" data-tab="weight" data-sub="cal"><span>${line}</span>${icon('right')}</button></section>`;
 }
@@ -261,8 +261,63 @@ function yearsPanel() {
     }
     html += `<div class="yr"><div class="yr-h"><b class="num">${y}</b><span class="muted small">${n} jour${n > 1 ? 's' : ''} d'entraînement</span></div><div class="yr-g">${cells}</div></div>`;
   }
-  return `<section class="panel"><div class="panel-title"><h2>Tes années</h2><span class="muted small">1 carré = 1 jour</span></div>${html}
-    <div class="yr-leg"><span><i class="l2"></i>Séance</span><span><i class="l1"></i>Activité</span><span><i></i>Rien</span></div></section>`;
+  return `<section class="panel yr-panel" data-act="years-open" role="button" aria-label="Voir tes années en détail"><div class="panel-title"><h2>Tes années</h2><span class="muted small">1 carré = 1 jour</span></div>${html}
+    <div class="yr-leg"><span><i class="l2"></i>Séance</span><span><i class="l1"></i>Activité</span><span><i></i>Rien</span><span class="yr-more">Détail ${icon('right')}</span></div></section>`;
+}
+function yearsFirst() { return [S.created, ...Object.keys(S.train), ...Object.keys(S.extra)].sort()[0] || today(); }
+// Vue détaillée : 12 mois, un carré par jour (semaine du lundi au dimanche), plein écran
+const MONTHS_FR = ['JANV', 'FÉVR', 'MARS', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'];
+function yearsView(y) {
+  const t = today(); const first = yearsFirst(); const curM = +t.slice(5, 7); const curY = +t.slice(0, 4);
+  let total = 0, best = { n: -1, m: 0 };
+  const months = MONTHS_FR.map((name, mi) => {
+    const m = mi + 1; const mm = String(m).padStart(2, '0'); const days = new Date(y, m, 0).getDate();
+    const lead = (new Date(y, mi, 1).getDay() + 6) % 7; let cells = '<i class="o"></i>'.repeat(lead), n = 0;
+    for (let d = 1; d <= days; d++) {
+      const k = `${y}-${mm}-${String(d).padStart(2, '0')}`; const l = k > t || k < first ? -1 : dayLevel(k); if (l === 2) n++;
+      cells += `<i class="${l === 2 ? 'l2' : l === 1 ? 'l1' : l < 0 ? 'f' : ''}${k === t ? ' t' : ''}" data-d="${k}" style="--i:${d}"></i>`;
+    }
+    total += n; if (n > best.n) best = { n, m: mi };
+    const now = y === curY && m === curM; const fut = y > curY || (y === curY && m > curM);
+    return `<div class="ym ${now ? 'now' : ''} ${fut ? 'fut' : ''}"><div class="ym-h"><b>${name}</b><span class="num">${n}</span></div><div class="ym-g">${cells}</div></div>`;
+  }).join('');
+  const y0 = +first.slice(0, 4);
+  const sessions = Object.keys(S.train).filter((k) => k.startsWith(String(y)) && dayLevel(k) === 2).length;
+  return `<div class="yv-top"><button class="icon-btn" data-yv="close" aria-label="Fermer">${icon('left')}</button><span>Tes années</span><span></span></div>
+    <div class="yv-card">
+      <div class="yv-head"><div class="yv-year"><button data-yv="prev" ${y <= y0 ? 'disabled' : ''} aria-label="Année précédente">${icon('left')}</button><b class="num">${y}</b><button data-yv="next" ${y >= curY ? 'disabled' : ''} aria-label="Année suivante">${icon('right')}</button></div><b class="yv-total num">${total}</b></div>
+      <p class="yv-sub">Un carré par jour, allumé les jours où tu t'es entraîné.</p>
+      <div class="ym-grid">${months}</div>
+      <div class="yv-stats"><div><b class="num">${streak()}</b><span>jours d'affilée</span></div><div><b class="num">${total ? MONTHS_FR[best.m] : '–'}</b><span>meilleur mois</span></div><div><b class="num">${sessions}</b><span>séances notées</span></div></div>
+    </div>
+    <div class="yr-leg yv-leg"><span><i class="l2"></i>Séance</span><span><i class="l1"></i>Activité</span><span><i></i>Rien</span></div>
+    <p class="yv-tip">Touche un carré pour voir ce que tu as fait ce jour-là.</p>`;
+}
+function dayWhat(k) {
+  const tr = S.train[k] || {}; const plan = dayPlan(dow(k)); const bits = [];
+  const sets = Object.values(tr.sets || {}).reduce((a, x) => a + (x || []).filter(isSet).length, 0);
+  if (tr.done || sets) bits.push(`${plan.rest ? 'Séance' : plan.title}${sets ? `, ${sets} série${sets > 1 ? 's' : ''}` : ''}`);
+  const tasks = Object.keys(tr.tasks || {}).filter((id) => tr.tasks[id] && TASKS[id]).map((id) => TASKS[id].name.toLowerCase());
+  if (tasks.length) bits.push(tasks.join(', '));
+  (S.extra[k] || []).forEach((x) => bits.push(x.name.toLowerCase()));
+  if (Object.keys(S.grow.log[k] || {}).some((id) => id !== 'sprint')) bits.push('routine posture');
+  return bits.length ? bits.join(' · ') : 'Rien de noté';
+}
+function openYears(y = +today().slice(0, 4)) {
+  closeSheet(true);
+  let el = $('.yv'); if (!el) { el = document.createElement('div'); el.className = 'yv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Tes années'); document.body.appendChild(el); }
+  el.dataset.y = y; el.innerHTML = yearsView(y); el.scrollTop = 0;
+  requestAnimationFrame(() => el.classList.add('on'));
+  document.documentElement.style.overflow = 'hidden'; haptic(10);
+  el.onclick = (ev) => {
+    const b = ev.target.closest('[data-yv]');
+    if (b) {
+      if (b.dataset.yv === 'close') { el.classList.remove('on'); document.documentElement.style.overflow = ''; setTimeout(() => el.remove(), 420); return; }
+      const ny = +el.dataset.y + (b.dataset.yv === 'prev' ? -1 : 1); el.dataset.y = ny; el.innerHTML = yearsView(ny); haptic(8); return;
+    }
+    const c = ev.target.closest('.ym-g i[data-d]');
+    if (c) { const k = c.dataset.d; if (k > today()) return; $$('.ym-g i.sel', el).forEach((x) => x.classList.remove('sel')); c.classList.add('sel'); toast(`${fromKey(k).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} : ${dayWhat(k)}`); haptic(6); }
+  };
 }
 
 function vFood() {
@@ -288,7 +343,7 @@ function vTrain() {
   const i = UI.trainDay; const k = addDays(mondayOf(today()), i); const plan = dayPlan(i); const tr = S.train[k] || { sets: {}, tasks: {}, n: {} };
   const days = WEEK.map((p, j) => `<button class="${j === i ? 'on' : ''} ${j === dow(today()) ? 'today' : ''}" data-act="train-day" data-i="${j}"><b>${DAYS_SHORT[j]}</b>${esc(p.rest ? 'Rest' : p.title.split(' ')[0])}</button>`).join('');
   const prog = liftProgress(k, i);
-  const head = `<div class="day-head has-fig"><div class="day-fig" data-act="hero-tap">${heroSVG(plan.rest ? restPose(k) : 'curl', { crop: 'upper', sparks: 5 })}</div><h1>${esc(plan.title)}</h1><p>${esc(plan.day)}${k === today() ? ', aujourd\'hui' : ''}. ${plan.rest ? 'Pas de salle. Mange, dors, récupère : le muscle se construit aujourd\'hui.' : `${plan.lifts.length} exercices, 3 séries, la dernière proche de l'échec.`}</p></div>
+  const head = `<div class="day-head has-fig"><div class="day-fig" data-act="hero-tap">${heroSVG(plan.rest ? restPose(k) : 'curl', { crop: 'upper', sparks: 5 })}</div><h1 class="${plan.title.length > 12 ? 'long' : ''}">${esc(plan.title)}</h1><p>${esc(plan.day)}${k === today() ? ', aujourd\'hui' : ''}. ${plan.rest ? 'Pas de salle. Mange, dors, récupère : le muscle se construit aujourd\'hui.' : `${plan.lifts.length} exercices, 3 séries, la dernière proche de l'échec.`}</p></div>
     <div class="progress-line"><i data-fid="train-prog" data-f="${prog.f}"></i></div>`;
 
   const taskCard = (id) => {
@@ -450,7 +505,7 @@ function vForce() {
   const head = `<section class="panel strong toned"><div class="panel-title"><h2>Cette semaine</h2></div>
     <div class="trio"><div><b class="num">${wk.sessions}</b><span>séance${wk.sessions > 1 ? 's' : ''}</span></div><div><b class="num">${wk.sets}</b><span>séries</span></div><div><b class="num">${fmt(wk.vol)}</b><span>kg soulevés</span></div></div>
     <p class="muted small" style="margin:12px 0 0">${cmp} ${prs ? `${prs} record${prs > 1 ? 's' : ''} battu${prs > 1 ? 's' : ''} ce mois-ci.` : ''}</p></section>`;
-  const bases = [...new Set([...WEEK.flatMap((d) => d.lifts), ...Object.values(EX_ALT).flat()].map(baseOf))];
+  const bases = [...new Set([...WEEK.flatMap((d) => d.lifts), ...Object.values(EX_ALT).flat(), ...Object.values(S.train).flatMap((tr) => Object.keys(tr.sets || {}))].filter((id) => EX[id]).map(baseOf))];
   const rows = bases.map((b) => ({ b, e: exInfo(b), ses: sessionsOf(b) })).filter((x) => x.ses.length);
   if (!rows.length) return head + `<div class="empty">Valide ta première série dans Training : ta progression s'affichera ici, exercice par exercice.</div>`;
   const list = rows.map(({ b, e, ses }) => {
@@ -708,42 +763,85 @@ Réponds uniquement avec ce JSON :
 {"nom":"nom du produit","marque":"","pour100":{"kcal":0,"proteines":0,"glucides":0,"lipides":0,"fibres":0,"sucres":0},"portion_g":0}
 Mets null pour toute valeur illisible.`;
 
+/* Rapidité : réponse en 30 s maximum.
+   1. Photo réduite (768 px) avant l'envoi.
+   2. Réflexion de l'IA réglée au minimum (thinkingLevel « low », ou thinkingBudget 0 pour Gemini 2.5).
+   3. Si le modèle principal ne répond pas en 8 s (ou plante), un modèle « Flash-Lite » plus rapide part en parallèle :
+      la première bonne réponse gagne, l'autre est annulée.
+   4. Au bout de 30 s, on arrête et on affiche un message clair. */
+const AI_DEADLINE = 30000, AI_HEDGE = 8000;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function thinkCfg(model) {
+  if (/gemini-(1\.|2\.0)/.test(model) || /gemini-2\.5-flash-lite/.test(model)) return null;
+  if (/gemini-2\.5/.test(model)) return { thinkingBudget: 0 };
+  return { thinkingLevel: 'low' };
+}
+function aiBody(parts, model, think = true) {
+  const gc = { responseMimeType: 'application/json', temperature: 0.2 };
+  const t = think && thinkCfg(model); if (t) gc.thinkingConfig = t;
+  return { contents: [{ role: 'user', parts }], generationConfig: gc };
+}
+// Choisit les modèles une fois par semaine : le meilleur Flash (principal) et le meilleur Flash-Lite (rapide)
+async function aiModels(key) {
+  const tag = key.slice(-6); const c = S.ai.models;
+  const manual = S.ai.model && S.ai.model !== 'auto' && S.ai.model !== 'gemini-flash-latest' ? S.ai.model : null;
+  if (c && c.tag === tag && Date.now() - c.t < 7 * 864e5) return { main: manual || c.main, fast: c.fast };
+  let main = 'gemini-flash-latest', fast = 'gemini-flash-lite-latest';
+  try {
+    const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key }, signal: ctrl.signal });
+    clearTimeout(to);
+    if (r.ok) {
+      const j = await r.json();
+      const names = (j.models || []).filter((m) => (m.supportedGenerationMethods || []).includes('generateContent')).map((m) => m.name.replace('models/', ''))
+        .filter((n) => /^gemini-.*flash/.test(n) && !/(image|tts|live|audio|embedding|thinking|8b|robotics|computer|native)/.test(n));
+      const score = (n) => (parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1]) || 0) * 10 - (/(preview|exp)/.test(n) ? 4 : 0) - (/-\d{3,}$/.test(n) ? 1 : 0);
+      const best = (arr) => [...arr].sort((x, y) => score(y) - score(x))[0];
+      main = best(names.filter((n) => !/lite/.test(n))) || main;
+      fast = best(names.filter((n) => /lite/.test(n))) || fast;
+      S.ai.models = { tag, t: Date.now(), main, fast }; save();
+    }
+  } catch (e) { }
+  return { main: manual || main, fast };
+}
+class AIError extends Error { constructor(res) { super('ai'); this.res = res; } }
 async function gemini(parts) {
   const key = (S.ai.key || '').trim();
   if (!key) throw new UserError('Ajoute d\'abord ta clé Gemini gratuite dans Réglages.');
-  const body = { contents: [{ role: 'user', parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } };
-  let model = S.ai.model || 'gemini-flash-latest';
-  let res = await callModel(model, body, key);
-  if (!res.ok && (res.status === 404 || (res.status === 400 && /not found|not supported|unknown name/i.test(res.text)))) {
-    const m = await pickModel(key);
-    if (m && m !== model) { S.ai.model = m; save(); res = await callModel(m, body, key); }
-  }
-  if (!res.ok) throw new UserError(explainError(res));
-  let data; try { data = JSON.parse(res.text); } catch (e) { throw new UserError('Réponse illisible de l\'IA. Réessaie.'); }
-  const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
-  if (!text) throw new UserError('L\'IA n\'a rien répondu. Réessaie avec une autre photo.');
-  return parseLoose(text);
+  if (!navigator.onLine) throw new UserError('Pas de connexion internet.');
+  const t0 = Date.now(); const { main, fast } = await aiModels(key);
+  const ctrls = []; let done = false; let kick; const kicked = new Promise((r) => { kick = r; });
+  const attempt = async (model) => {
+    if (done) throw new Error('skip');
+    const ctrl = new AbortController(); ctrls.push(ctrl);
+    let res = await callModel(model, aiBody(parts, model), key, ctrl.signal);
+    if (!res.ok && res.status === 400 && /thinking/i.test(res.text)) res = await callModel(model, aiBody(parts, model, false), key, ctrl.signal);
+    if (!res.ok) { if (res.status === 404) S.ai.models = null; throw new AIError(res); }
+    let data; try { data = JSON.parse(res.text); } catch (e) { throw new UserError('Réponse illisible de l\'IA. Réessaie.'); }
+    const text = (data.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+    if (!text) throw new UserError('L\'IA n\'a rien répondu. Réessaie avec une autre photo.');
+    return parseLoose(text);
+  };
+  const first = attempt(main).catch((e) => { kick(); throw e; });
+  const second = (async () => { await Promise.race([sleep(AI_HEDGE), kicked]); return attempt(fast); })();
+  let timer; const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new UserError('L\'IA a mis plus de 30 secondes : les serveurs gratuits de Google sont chargés. Réessaie, ou décris ton repas en texte.')), Math.max(5000, AI_DEADLINE - (Date.now() - t0))); });
+  try {
+    return await Promise.race([Promise.any([first, second]), timeout]);
+  } catch (e) {
+    const errs = (e && e.errors) || [e];
+    const real = errs.find((x) => x instanceof UserError) || errs.find((x) => x instanceof AIError) || errs[0];
+    if (real instanceof AIError) throw new UserError(explainError(real.res));
+    if (real instanceof UserError) throw real;
+    throw new UserError('Pas de connexion internet.');
+  } finally { done = true; clearTimeout(timer); ctrls.forEach((c) => { try { c.abort(); } catch (x) { } }); }
 }
-async function callModel(model, body, key) {
+async function callModel(model, body, key, signal) {
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body),
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body), signal,
     });
     return { ok: r.ok, status: r.status, text: await r.text() };
-  } catch (e) { throw new UserError('Pas de connexion internet.'); }
-}
-async function pickModel(key) {
-  try {
-    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key } });
-    if (!r.ok) return null;
-    const j = await r.json();
-    const ok = (j.models || []).filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
-      .map((m) => m.name.replace('models/', ''))
-      .filter((n) => /flash/.test(n) && !/(image|tts|live|audio|embedding|thinking|8b)/.test(n));
-    const score = (n) => (parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1]) || 0) * 10 - (/lite/.test(n) ? 3 : 0) - (/(preview|exp)/.test(n) ? 2 : 0) + (/latest/.test(n) ? 50 : 0);
-    ok.sort((a, b) => score(b) - score(a));
-    return ok[0] || null;
-  } catch (e) { return null; }
+  } catch (e) { if (e.name === 'AbortError') throw new Error('skip'); throw new UserError('Pas de connexion internet.'); }
 }
 function explainError(res) {
   let msg = ''; try { msg = JSON.parse(res.text).error?.message || ''; } catch (e) { }
@@ -777,7 +875,8 @@ function addFood(e, day = UI.tab === 'food' ? UI.foodDay : today()) {
   S.recents = [r, ...S.recents.filter((x) => x.name !== r.name)].slice(0, 12);
   save(); closeSheet(); render();
   haptic(15);
-  toast(`Ajouté : ${entry.name}`, { label: 'Annuler', fn: () => { S.food[day] = S.food[day].filter((x) => x.id !== entry.id); save(); render(); } });
+  const dt = dayTotals(day), dg = goalsFor(day);
+  toast(`Ajouté. Journée : ${fmt((dt.kcal / (dg.kcal || 1)) * 100)} % des kcal, ${fmt((dt.p / (dg.p || 1)) * 100)} % des protéines`, { label: 'Annuler', fn: () => { S.food[day] = S.food[day].filter((x) => x.id !== entry.id); save(); render(); } });
   if (day === today()) checkGoals(day);
 }
 function checkGoals(d) {
@@ -802,15 +901,26 @@ function openPhoto() {
     const go = async (cap) => {
       const file = await pickFile(cap); if (!file) return;
       const zone = $('#zone', sh);
+      let data;
+      try { data = await compress(file, 768, 0.72); } catch (e) { zone.innerHTML = `<div class="warn">${esc(e.message)}</div>`; return; }
+      analyze(data);
+    };
+    const analyze = async (data) => {
+      const zone = $('#zone', sh); const t0 = Date.now();
+      zone.innerHTML = `<div class="scan" style="aspect-ratio:4/3"><img src="${data}" alt="Ton repas"><div class="analyzing"><b>Analyse</b><span id="anT">Identification des aliments… 0 s</span></div></div>`;
+      const tick = setInterval(() => { const el = $('#anT', sh); if (el) el.textContent = `Identification des aliments… ${Math.round((Date.now() - t0) / 1000)} s`; }, 500);
       try {
-        const data = await compress(file);
-        zone.innerHTML = `<div class="scan" style="aspect-ratio:4/3"><img src="${data}" alt="Ton repas"><div class="analyzing"><b>Analyse</b><span>Identification des aliments…</span></div></div>`;
         const thumb = await squareThumb(data);
         const j = await gemini([{ inline_data: { mime_type: 'image/jpeg', data: data.split(',')[1] } }, { text: PROMPT_PHOTO }]);
         const meal = normMeal(j);
         zone.innerHTML = `<div class="scan" style="aspect-ratio:4/3;max-height:200px"><img src="${data}" alt="Ton repas"></div>`;
         resultEditor(zone, meal, { thumb, src: 'photo' }, true);
-      } catch (e) { zone.innerHTML = `<div class="warn">${esc(e instanceof UserError ? e.message : 'Erreur : ' + e.message)}</div>`; }
+      } catch (e) {
+        zone.innerHTML = `<div class="warn">${esc(e instanceof UserError ? e.message : 'Erreur : ' + e.message)}</div>
+          <div class="row" style="margin-top:10px"><button class="btn btn-primary" id="anRetry">Réessayer</button><button class="btn btn-ghost" id="anText">Décrire en texte</button></div>`;
+        $('#anRetry', sh).onclick = () => analyze(data);
+        $('#anText', sh).onclick = () => openText();
+      } finally { clearInterval(tick); }
     };
     $('#phCam', sh).onclick = () => go(true);
     $('#phGal', sh).onclick = () => go(false);
@@ -832,7 +942,23 @@ function openText() {
   });
 }
 
+// Ce que représente un repas dans ta journée : % de chaque objectif + total de la journée après le repas
+function dayImpact(m, d, counted = false) {
+  const t = dayTotals(d); const g = goalsFor(d);
+  const rows = [['kcal', 'Calories', 'kcal'], ['p', 'Protéines', 'g'], ['c', 'Glucides', 'g'], ['f', 'Lipides', 'g']].map(([k, label, u]) => {
+    const add = Math.max(0, num(m[k])); const before = Math.max(0, t[k] - (counted ? add : 0)); const after = before + add; const goal = g[k] || 1;
+    const pm = (add / goal) * 100, pa = (after / goal) * 100;
+    const wB = clamp((before / goal) * 100, 0, 100), wA = clamp(pa, 0, 100) - wB;
+    const status = pa >= 100 ? (k === 'kcal' && pa > 110 ? `${fmt(after - goal)} ${u} au-dessus` : 'objectif atteint') : `reste ${fmt(goal - after)} ${u}`;
+    return `<div class="imp ${pa >= 100 ? 'full' : ''}"><div class="imp-top"><b>${label}</b><span class="num"><b>${fmt(add)} ${u}</b> = ${fmt(pm)} % de l'objectif</span></div>
+      <div class="imp-bar"><i class="was" style="width:${wB.toFixed(1)}%"></i><i class="add" style="width:${Math.max(0, wA).toFixed(1)}%"></i></div>
+      <div class="imp-after num">Journée ${counted ? '' : 'après ce repas '}: ${fmt(after)} / ${fmt(goal)} ${u} (${fmt(pa)} %), ${status}</div></div>`;
+  }).join('');
+  return `<div class="imp-h"><b>Ce repas dans ta journée</b><span class="muted small">${d === today() ? 'aujourd\'hui' : esc(dayLabel(d).toLowerCase())}</span></div>${rows}
+    <div class="imp-leg"><span><i class="was"></i>Déjà mangé</span><span><i class="add"></i>Ce repas</span></div>`;
+}
 function resultEditor(zone, meal, extra, fromAI) {
+  const day = UI.tab === 'food' ? UI.foodDay : today();
   const base = { ...meal.total };
   const items = meal.items.length ? `<ul class="result-items">${meal.items.map((x) => `<li><b>${esc(x.name)}</b><span class="num">${x.g ? fmt(x.g) + ' g, ' : ''}${fmt(x.kcal)} kcal</span></li>`).join('')}</ul>` : '';
   zone.insertAdjacentHTML('beforeend', `
@@ -842,10 +968,13 @@ function resultEditor(zone, meal, extra, fromAI) {
     <div class="field"><span>Portion</span><div class="chips" id="rMul">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((m) => `<button class="chip ${m === 1 ? 'on' : ''}" data-m="${m}">×${fmt(m, m % 1 ? 2 : 0)}</button>`).join('')}</div></div>
     <div class="grid2"><label class="field"><span>Calories (kcal)</span><input class="input num" inputmode="decimal" id="rK"></label><label class="field"><span>Protéines (g)</span><input class="input num" inputmode="decimal" id="rP"></label>
     <label class="field"><span>Glucides (g)</span><input class="input num" inputmode="decimal" id="rC"></label><label class="field"><span>Lipides (g)</span><input class="input num" inputmode="decimal" id="rF"></label></div>
+    <div class="impact-day" id="rImp"></div>
     ${fromAI ? `<p class="muted tiny" style="margin:0 0 12px">Estimation IA${meal.confidence ? `, confiance ${esc(meal.confidence)}` : ''}. Une photo peut se tromper de 20 % ou plus : corrige si tu connais les quantités.</p>` : ''}
     <button class="btn btn-primary btn-block" id="rAdd">Ajouter au journal</button>`);
-  const set = (m) => { $('#rK', zone).value = Math.round(base.kcal * m); $('#rP', zone).value = fmt(base.p * m, 1).replace(/\s/g, ''); $('#rC', zone).value = fmt(base.c * m, 1).replace(/\s/g, ''); $('#rF', zone).value = fmt(base.f * m, 1).replace(/\s/g, ''); zone.dataset.m = m; };
+  const imp = () => { const box = $('#rImp', zone); box.innerHTML = dayImpact({ kcal: num($('#rK', zone).value), p: num($('#rP', zone).value), c: num($('#rC', zone).value), f: num($('#rF', zone).value) }, day); setTimeout(() => box.classList.add('ready'), 700); };
+  const set = (m) => { $('#rK', zone).value = Math.round(base.kcal * m); $('#rP', zone).value = fmt(base.p * m, 1).replace(/\s/g, ''); $('#rC', zone).value = fmt(base.c * m, 1).replace(/\s/g, ''); $('#rF', zone).value = fmt(base.f * m, 1).replace(/\s/g, ''); zone.dataset.m = m; imp(); };
   set(1);
+  ['#rK', '#rP', '#rC', '#rF'].forEach((q) => { $(q, zone).addEventListener('input', imp); });
   $$('#rMul .chip', zone).forEach((b) => b.onclick = () => { $$('#rMul .chip', zone).forEach((x) => x.classList.toggle('on', x === b)); set(+b.dataset.m); });
   $('#rAdd', zone).onclick = () => {
     const m = +zone.dataset.m || 1;
@@ -964,9 +1093,10 @@ function quantityEditor(zone, prod) {
     <div class="field"><span>Quantité mangée (g)</span><div class="stepper"><button data-q="-10">−</button><input class="input num" id="qIn" inputmode="decimal" value="${def}"><button data-q="10">+</button></div></div>
     <div class="chips" style="margin-bottom:12px">${qs.map((q) => `<button class="chip" data-qs="${q}">${q === Math.round(prod.serving || 0) ? 'Portion ' : ''}${q} g</button>`).join('')}</div>
     <div class="tot" id="qTot"></div>
+    <div class="impact-day" id="qImp"></div>
     <button class="btn btn-primary btn-block" id="qAdd">Ajouter au journal</button>`;
   const calc = () => { const q = num($('#qIn', zone).value); const k = q / 100; return { q, kcal: (P.kcal || 0) * k, p: (P.p || 0) * k, c: (P.c || 0) * k, f: (P.f || 0) * k, fiber: (P.fiber || 0) * k, sugar: (P.sugar || 0) * k }; };
-  const upd = () => { const t = calc(); $('#qTot', zone).innerHTML = `<div><b class="num">${fmt(t.kcal)}</b><span>kcal</span></div><div><b class="num">${fmt(t.p)}</b><span>prot. (g)</span></div><div><b class="num">${fmt(t.c)}</b><span>gluc. (g)</span></div><div><b class="num">${fmt(t.f)}</b><span>lip. (g)</span></div>`; };
+  const upd = () => { const t = calc(); $('#qTot', zone).innerHTML = `<div><b class="num">${fmt(t.kcal)}</b><span>kcal</span></div><div><b class="num">${fmt(t.p)}</b><span>prot. (g)</span></div><div><b class="num">${fmt(t.c)}</b><span>gluc. (g)</span></div><div><b class="num">${fmt(t.f)}</b><span>lip. (g)</span></div>`; $('#qImp', zone).innerHTML = dayImpact(t, UI.tab === 'food' ? UI.foodDay : today()); setTimeout(() => $('#qImp', zone)?.classList.add('ready'), 700); };
   upd();
   $('#qIn', zone).oninput = upd;
   $$('[data-q]', zone).forEach((b) => b.onclick = () => { $('#qIn', zone).value = Math.max(0, num($('#qIn', zone).value) + +b.dataset.q); upd(); });
@@ -982,8 +1112,9 @@ function openEntry(id) {
   const d = UI.foodDay; const e = (S.food[d] || []).find((x) => x.id === id); if (!e) return;
   const src = { photo: 'Photo + IA', barcode: 'Code-barres', text: 'Description + IA', manual: 'Saisie manuelle' }[e.src] || '';
   openSheet(`${e.thumb ? `<div class="scan" style="aspect-ratio:auto;height:160px"><img src="${e.thumb}" alt=""></div>` : ''}
-    <h3>${esc(e.name)}</h3><p class="sub">${new Date(e.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, ${esc(src.toLowerCase())}</p>
+    <h3>${esc(e.name)}</h3><p class="sub">${typeof e.t === 'number' ? new Date(e.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ', ' : ''}${esc(src.toLowerCase())}</p>
     <div class="tot"><div><b class="num">${fmt(e.kcal)}</b><span>kcal</span></div><div><b class="num">${fmt(e.p, 1)}</b><span>prot. (g)</span></div><div><b class="num">${fmt(e.c, 1)}</b><span>gluc. (g)</span></div><div><b class="num">${fmt(e.f, 1)}</b><span>lip. (g)</span></div></div>
+    <div class="impact-day">${dayImpact(e, d, true)}</div>
     <p class="muted small">Fibres ${fmt(e.fiber, 1)} g, sucres ${fmt(e.sugar, 1)} g.</p>
     <div class="row"><button class="btn btn-ghost" id="eDup">Rajouter une portion</button><button class="btn btn-ghost" id="eDel">Supprimer</button></div>`, (sh) => {
     $('#eDel', sh).onclick = () => { S.food[d] = S.food[d].filter((x) => x.id !== id); save(); closeSheet(); render(); toast('Supprimé'); };
@@ -1249,7 +1380,7 @@ function openSettings() {
     <section class="panel"><div class="panel-title"><h2>IA photo (gratuit)</h2></div>
       <ol class="rules small" style="margin-bottom:12px"><li>Ouvre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> et connecte-toi avec Google.</li><li>Clique « Create API key », copie la clé.</li><li>Colle-la ici, puis « Tester ».</li></ol>
       <label class="field"><span>Clé API Gemini</span><input class="input" id="aK" type="password" autocomplete="off" value="${esc(S.ai.key)}" placeholder="AIza…"></label>
-      <label class="field"><span>Modèle</span><input class="input" id="aM" value="${esc(S.ai.model)}"></label>
+      <label class="field"><span>Modèle (laisse « auto » : l'app choisit le plus rapide)</span><input class="input" id="aM" value="${esc(S.ai.model === 'gemini-flash-latest' ? 'auto' : S.ai.model)}" placeholder="auto"></label>
       <button class="btn btn-ghost btn-block" id="aTest">Tester la clé</button><p class="small" id="aRes" style="margin:8px 0 0"></p></section>
     <section class="panel"><div class="panel-title"><h2>Sons et voix</h2></div>
       <div class="row"><button class="chip ${S.prefs.sound ? 'on' : ''}" id="pS">Sons ${S.prefs.sound ? 'activés' : 'coupés'}</button><button class="chip ${S.prefs.voice ? 'on' : ''}" id="pV">Coach vocal ${S.prefs.voice ? 'activé' : 'coupé'}</button></div></section>
@@ -1271,8 +1402,9 @@ function openSettings() {
     $('#pV', sh).onclick = (e) => { S.prefs.voice = !S.prefs.voice; e.target.classList.toggle('on', S.prefs.voice); e.target.textContent = `Coach vocal ${S.prefs.voice ? 'activé' : 'coupé'}`; save(); if (S.prefs.voice) say('1-2'); };
     $('#aTest', sh).onclick = async () => {
       const out = $('#aRes', sh); out.textContent = 'Test en cours…';
-      const old = { ...S.ai }; S.ai.key = $('#aK', sh).value.trim(); S.ai.model = $('#aM', sh).value.trim() || 'gemini-flash-latest';
-      try { const j = await gemini([{ text: 'Réponds uniquement {"ok":true}' }]); out.textContent = j && j.ok ? `Clé valide. Modèle : ${S.ai.model}.` : 'Clé valide.'; $('#aM', sh).value = S.ai.model; save(); }
+      const old = { ...S.ai }; S.ai.key = $('#aK', sh).value.trim(); S.ai.model = $('#aM', sh).value.trim() || 'auto'; S.ai.models = null;
+      const t0 = Date.now();
+      try { const j = await gemini([{ text: 'Réponds uniquement {"ok":true}' }]); const m = S.ai.models; out.textContent = `Clé valide, réponse en ${fmt((Date.now() - t0) / 1000, 1)} s.${m ? ` Modèles : ${m.main} et ${m.fast}.` : ''}`; save(); }
       catch (e) { out.textContent = e.message; S.ai.model = old.model; }
     };
     $('#dExp', sh).onclick = exportData;
@@ -1283,7 +1415,7 @@ function openSettings() {
       S.profile.age = clamp(Math.round(v('sA')) || 18, 12, 99); S.profile.act = act;
       const prot = mode === 'auto' ? v('gP2') : v('gP');
       S.goals = { mode, surplus: $('#gSur', sh).value.trim() === '' ? 400 : clamp(Math.round(v('gSur')), 0, 1200), kcal: v('gK') || 3100, p: prot || 130, c: v('gC'), f: v('gF') };
-      S.ai.key = $('#aK', sh).value.trim(); S.ai.model = $('#aM', sh).value.trim() || 'gemini-flash-latest';
+      S.ai.key = $('#aK', sh).value.trim(); S.ai.model = $('#aM', sh).value.trim() || 'auto';
       S.boxStart = $('#bS', sh).value || S.boxStart;
       save(); closeSheet(); render(); toast('Réglages enregistrés');
     };
@@ -1318,6 +1450,7 @@ const ACT = {
   set: (el) => toggleSet(el.dataset.id, +el.dataset.s, el.dataset.k),
   'ex-swap': (el) => openSwap(el.dataset.slot, el.dataset.k),
   'day-reset': (el) => openReset(el.dataset.k),
+  'years-open': () => openYears(),
   'grow-check': (el) => toggleGrow(el.dataset.id),
   'grow-timer': (el) => { startRest(+el.dataset.sec, 'Tiens', 'Côté suivant'); haptic(10); },
   'grow-sprint': () => startRounds('sprint'),

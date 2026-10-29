@@ -110,6 +110,20 @@ const EX = {
   'overhead-ext-2': { ref: 'overhead-ext', name: 'Overhead cable extension',
     cues: ['Corde à la poulie basse, dos à la machine, un pied devant.', 'Coudes vers le haut, près de la tête : ils ne bougent pas.', 'Descends loin derrière la tête pour étirer la longue portion.', 'Tends en haut et écarte légèrement la corde.'] },
 
+  'kelso-shrug': { name: 'Kelso shrug', sets: 3, reps: '10-12', rest: 60,
+    p: ['upb', 'traps'], s: ['deltR'],
+    cues: ['Banc incliné à 30-45°, poitrine collée au dossier, haltères bras tendus vers le sol.', 'Serre les omoplates vers l\'arrière et vers le bas, sans plier les coudes : ce sont les omoplates qui bougent, pas les bras.', 'Tiens 1 à 2 secondes en contraction.', 'Redescends en laissant les omoplates s\'écarter complètement.'] },
+  'cable-crunch': { name: 'Cable crunch', sets: 3, reps: '10-15', rest: 60,
+    p: ['abs'], s: ['obl'],
+    cues: ['À genoux face à la poulie haute, corde tenue au niveau du front.', 'Enroule le buste en rapprochant les côtes du bassin : les hanches ne bougent pas.', 'Expire à fond en bas et serre 1 seconde.', 'Remonte lentement, sans laisser la charge te tirer.'] },
+  'hanging-leg-raise': { name: 'Hanging leg raises', sets: 3, reps: '8-15', rest: 60, bw: true,
+    p: ['abs'], s: ['obl', 'fore'],
+    cues: ['Suspendu à la barre, épaules actives, sans te balancer.', 'Monte les jambes en enroulant le bassin vers le haut : c\'est l\'enroulement qui fait travailler les abdos.', 'Trop dur ? Genoux pliés. Trop facile ? Jambes tendues, puis lest entre les pieds (note-le dans kg).', 'Redescends lentement en 2 secondes.'] },
+  'shoulder-press-2': { ref: 'shoulder-press' },
+  'preacher-curl-2': { ref: 'preacher-curl' },
+  'reverse-grip-curl': { ref: 'reverse-curl', name: 'Reverse grip curl' },
+  'triceps-ext': { ref: 'overhead-ext', name: 'Triceps extension' },
+
   // Exercices de remplacement (bouton « Changer » quand une machine est prise)
   'weighted-dips': { name: 'Dips lestés', sets: 3, reps: '6-10', rest: 120, bw: true,
     p: ['chest', 'tri'], s: ['deltF'],
@@ -144,6 +158,13 @@ const EX_ALT = {
   'preacher-curl': ['incline-curl', 'hammer-curl'],
   'incline-curl': ['preacher-curl', 'hammer-curl'],
   'hammer-curl': ['preacher-curl', 'incline-curl'],
+  'kelso-shrug': ['chest-row', 'face-pull', 'shrugs'],
+  'machine-dips': ['weighted-dips', 'triceps-pushdown', 'skull-crusher'],
+  'triceps-ext': ['weighted-dips', 'triceps-pushdown', 'skull-crusher'],
+  'preacher-curl-2': ['incline-curl', 'hammer-curl'],
+  'reverse-grip-curl': ['hammer-curl'],
+  'cable-crunch': ['abs'],
+  'hanging-leg-raise': ['abs'],
 };
 
 // Résout les exercices qui en réutilisent un autre (ex : Lateral raise du samedi)
@@ -169,11 +190,11 @@ const TASKS = {
 // Semaine : index 0 = lundi
 const WEEK = [
   { day: 'Lundi', title: 'Push', rest: false, before: [], lifts: ['incline-smith', 'chest-press', 'cable-fly', 'shoulder-press', 'lateral-raise', 'triceps-pushdown', 'overhead-ext-2'], after: [] },
-  { day: 'Mardi', title: 'Pull', rest: false, before: [], lifts: ['lat-pulldown', 'tbar-row', 'close-row', 'reverse-fly', 'preacher-curl', 'incline-curl', 'wrist-curl'], after: ['deadhang', 'box-short'] },
+  { day: 'Mardi', title: 'Pull', rest: false, before: [], lifts: ['lat-pulldown', 'tbar-row', 'close-row', 'kelso-shrug', 'reverse-fly', 'preacher-curl', 'incline-curl', 'wrist-curl'], after: ['deadhang', 'box-short'] },
   { day: 'Mercredi', title: 'Legs', rest: false, before: ['jump-warmup', 'plyo'], lifts: ['smith-squat', 'leg-press', 'rdl', 'leg-extension', 'ham-curl', 'calf-raise', 'abs'], after: [] },
   { day: 'Jeudi', title: 'Rest Day', rest: true, before: [], lifts: [], after: ['dribble', 'box-main'] },
   { day: 'Vendredi', title: 'Chest & Back', short: 'C&B', rest: false, before: [], lifts: ['flat-smith', 'wide-pulldown', 'low-high-fly', 'chest-row', 'face-pull', 'shrugs'], after: [] },
-  { day: 'Samedi', title: 'Arms', rest: false, before: [], lifts: ['hammer-curl', 'overhead-ext', 'skull-crusher', 'reverse-curl', 'farmer-walk', 'lateral-raise-2', 'abs-2'], after: ['jump-warmup', 'dunk'] },
+  { day: 'Samedi', title: 'Arms & Shoulders', short: 'A&S', rest: false, before: [], lifts: ['shoulder-press-2', 'lateral-raise-2', 'machine-dips', 'reverse-grip-curl', 'triceps-ext', 'preacher-curl-2', 'cable-crunch', 'hanging-leg-raise'], after: ['jump-warmup', 'dunk'] },
   { day: 'Dimanche', title: 'Rest Day', rest: true, before: [], lifts: [], after: ['box-light'] },
 ];
 
